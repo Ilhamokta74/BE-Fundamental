@@ -4,7 +4,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ./sc/server",
+    "dev": "nodemon ./src/server",
     "migrate": "node-pg-migrate",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix"
