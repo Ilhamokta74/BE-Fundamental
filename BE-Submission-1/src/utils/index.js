@@ -15,7 +15,7 @@ const mapDBToModelSongDetail = ({
   genre,
   performer,
   duration,
-  album_id,
+  album_id, // This is the key name from the database
 }) => ({
   id,
   title,
@@ -23,7 +23,7 @@ const mapDBToModelSongDetail = ({
   genre,
   performer,
   duration,
-  albumId: album_id,
+  albumId: album_id, // Convert to camelCase for consistency
 });
 
 module.exports = { mapDBToModelSong, mapDBToModelSongDetail };

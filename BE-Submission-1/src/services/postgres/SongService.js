@@ -14,42 +14,51 @@ class SongsService {
   }) {
     const id = nanoid(16);
     const query = {
-      text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      text: 'INSERT INTO songs (id, title, year, genre, performer, duration, "albumId") VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
       values: [id, title, year, genre, performer, duration, albumId],
     };
 
-    const result = await this._pool.query(query);
-    if (!result.rows[0].id) {
-      throw new InvariantError('Song gagal ditambahkan');
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rows[0].id) {
+        throw new InvariantError('Song gagal ditambahkan');
+      }
+      return result.rows[0].id;
+    } catch (error) {
+      throw new InvariantError(`Song gagal ditambahkan: ${error.message}`);
     }
-    return result.rows[0].id;
   }
 
   async getSongs(title, performer) {
     let text = 'SELECT id, title, performer FROM songs';
     const values = [];
+    const conditions = [];
 
     if (title) {
-      text += ' WHERE title ILIKE \'%\' || $1 || \'%\'';
+      conditions.push(`title ILIKE '%' || $${conditions.length + 1} || '%'`);
       values.push(title);
     }
 
-    if (title && performer) {
-      text += ' AND performer ILIKE \'%\' || $2 || \'%\'';
+    if (performer) {
+      conditions.push(`performer ILIKE '%' || $${conditions.length + 1} || '%'`);
       values.push(performer);
     }
 
-    if (!title && performer) {
-      text += ' WHERE performer ILIKE \'%\' || $1 || \'%\'';
-      values.push(performer);
+    if (conditions.length > 0) {
+      text += ` WHERE ${conditions.join(' AND ')}`;
     }
 
     const query = {
       text,
       values,
     };
-    const result = await this._pool.query(query);
-    return result.rows.map(mapDBToModelSong);
+
+    try {
+      const result = await this._pool.query(query);
+      return result.rows.map(mapDBToModelSong);
+    } catch (error) {
+      throw new Error(`Gagal mendapatkan songs: ${error.message}`);
+    }
   }
 
   async getSongById(id) {
@@ -57,11 +66,16 @@ class SongsService {
       text: 'SELECT * FROM songs WHERE id = $1',
       values: [id],
     };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Song tidak ditemukan');
+
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new NotFoundError('Song tidak ditemukan');
+      }
+      return mapDBToModelSongDetail(result.rows[0]);
+    } catch (error) {
+      throw new NotFoundError(`Gagal mendapatkan song: ${error.message}`);
     }
-    return mapDBToModelSongDetail(result.rows[0]);
   }
 
   async editSongById(id, {
@@ -71,9 +85,15 @@ class SongsService {
       text: 'UPDATE songs SET title = $1, year = $2, genre = $3, performer = $4, duration = $5, "albumId" = $6 WHERE id = $7 RETURNING id',
       values: [title, year, genre, performer, duration, albumId, id],
     };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Gagal memperbarui Song. Id tidak ditemukan');
+
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new NotFoundError('Gagal memperbarui Song. Id tidak ditemukan');
+      }
+      return result.rows[0].id;
+    } catch (error) {
+      throw new NotFoundError(`Gagal memperbarui song: ${error.message}`);
     }
   }
 
@@ -82,9 +102,14 @@ class SongsService {
       text: 'DELETE FROM songs WHERE id = $1 RETURNING id',
       values: [id],
     };
-    const result = await this._pool.query(query);
-    if (!result.rowCount) {
-      throw new NotFoundError('Song gagal dihapus. Id tidak ditemukan');
+
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new NotFoundError('Song gagal dihapus. Id tidak ditemukan');
+      }
+    } catch (error) {
+      throw new NotFoundError(`Gagal menghapus song: ${error.message}`);
     }
   }
 }
