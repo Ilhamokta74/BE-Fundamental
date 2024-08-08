@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
-const InvariantError = require('../../exceptions/InvariantError');
-const NotFoundError = require('../../exceptions/NotFoundError');
+const InvariantError = require('../../ErrorHandling/InvariantError');
+const NotFoundError = require('../../ErrorHandling/NotFoundError');
 const { DB_Song } = require('../../Database/DB_Song');
 
 class SongsService {
