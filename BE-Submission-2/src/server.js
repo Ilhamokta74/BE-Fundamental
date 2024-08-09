@@ -40,133 +40,138 @@ const CollaborationsValidator = require('./validator/collaborations');
 const CollaborationService = require('./services/postgres/CollaborationService');
 
 const init = async () => {
-  // Initializing services
-  const albumsService = new AlbumService();
-  const songsService = new SongService();
-  const usersService = new UserService();
-  const authenticationsService = new AuthenticationService();
-  const collaborationsService = new CollaborationService();
-  const playlistsService = new PlaylistService(collaborationsService);
-  const activitiesService = new PlaylistSongActivitiesService();
+  try {
+    // Initializing services
+    const albumsService = new AlbumService();
+    const songsService = new SongService();
+    const usersService = new UserService();
+    const authenticationsService = new AuthenticationService();
+    const collaborationsService = new CollaborationService();
+    const playlistsService = new PlaylistService(collaborationsService);
+    const activitiesService = new PlaylistSongActivitiesService();
 
-  // Creating the Hapi server
-  const server = Hapi.server({
-    port: process.env.PORT || 5000, // Default port to 5000 if not set
-    host: process.env.HOST || 'localhost', // Default host to 'localhost' if not set
-    routes: {
-      cors: {
-        origin: ['*'], // Allowing all origins for CORS
+    // Creating the Hapi server
+    const server = Hapi.server({
+      port: process.env.PORT || 5000, // Default port to 5000 if not set
+      host: process.env.HOST || 'localhost', // Default host to 'localhost' if not set
+      routes: {
+        cors: {
+          origin: ['*'], // Allowing all origins for CORS
+        },
       },
-    },
-  });
+    });
 
-  // Registering JWT plugin
-  await server.register(Jwt);
+    // Registering JWT plugin
+    await server.register(Jwt);
 
-  // Configuring JWT authentication strategy
-  server.auth.strategy('openmusic_jwt', 'jwt', {
-    keys: process.env.ACCESS_TOKEN_KEY,
-    verify: {
-      aud: false,
-      iss: false,
-      sub: false,
-      maxAgeSec: process.env.ACCESS_TOKEN_AGE,
-    },
-    validate: (artifacts) => ({
-      isValid: true,
-      credentials: {
-        id: artifacts.decoded.payload.id,
+    // Configuring JWT authentication strategy
+    server.auth.strategy('openmusic_jwt', 'jwt', {
+      keys: process.env.ACCESS_TOKEN_KEY,
+      verify: {
+        aud: false,
+        iss: false,
+        sub: false,
+        maxAgeSec: process.env.ACCESS_TOKEN_AGE,
       },
-    }),
-  });
+      validate: (artifacts) => ({
+        isValid: true,
+        credentials: {
+          id: artifacts.decoded.payload.id,
+        },
+      }),
+    });
 
-  // Registering plugins
-  await server.register([
-    {
-      plugin: albums,
-      options: {
-        service: albumsService,
-        validator: AlbumsValidator,
+    // Registering plugins
+    await server.register([
+      {
+        plugin: albums,
+        options: {
+          service: albumsService,
+          validator: AlbumsValidator,
+        },
       },
-    },
-    {
-      plugin: songs,
-      options: {
-        service: songsService,
-        validator: SongsValidator,
+      {
+        plugin: songs,
+        options: {
+          service: songsService,
+          validator: SongsValidator,
+        },
       },
-    },
-    {
-      plugin: users,
-      options: {
-        service: usersService,
-        validator: UsersValidator,
+      {
+        plugin: users,
+        options: {
+          service: usersService,
+          validator: UsersValidator,
+        },
       },
-    },
-    {
-      plugin: authentications,
-      options: {
-        authenticationsService,
-        usersService,
-        tokenManager: TokenManager,
-        validator: AuthenticationsValidator,
+      {
+        plugin: authentications,
+        options: {
+          authenticationsService,
+          usersService,
+          tokenManager: TokenManager,
+          validator: AuthenticationsValidator,
+        },
       },
-    },
-    {
-      plugin: playlists,
-      options: {
-        playlistsService,
-        songsService,
-        activitiesService,
-        validator: PlaylistsValidator,
+      {
+        plugin: playlists,
+        options: {
+          playlistsService,
+          songsService,
+          activitiesService,
+          validator: PlaylistsValidator,
+        },
       },
-    },
-    {
-      plugin: activities,
-      options: {
-        playlistsService,
-        activitiesService,
+      {
+        plugin: activities,
+        options: {
+          playlistsService,
+          activitiesService,
+        },
       },
-    },
-    {
-      plugin: collaborations,
-      options: {
-        collaborationsService,
-        playlistsService,
-        usersService,
-        validator: CollaborationsValidator,
+      {
+        plugin: collaborations,
+        options: {
+          collaborationsService,
+          playlistsService,
+          usersService,
+          validator: CollaborationsValidator,
+        },
       },
-    },
-  ]);
+    ]);
 
-  // Global error handling
-  server.ext('onPreResponse', (request, h) => {
-    const { response } = request;
-    if (response instanceof Error) {
-      if (response instanceof ClientError) {
+    // Global error handling
+    server.ext('onPreResponse', (request, h) => {
+      const { response } = request;
+      if (response instanceof Error) {
+        if (response instanceof ClientError) {
+          const newResponse = h.response({
+            status: 'fail',
+            message: response.message,
+          });
+          newResponse.code(response.statusCode);
+          return newResponse;
+        }
+        if (!response.isServer) {
+          return h.continue;
+        }
         const newResponse = h.response({
-          status: 'fail',
-          message: response.message,
+          status: 'error',
+          message: 'Internal server error',
         });
-        newResponse.code(response.statusCode);
+        newResponse.code(500);
         return newResponse;
       }
-      if (!response.isServer) {
-        return h.continue;
-      }
-      const newResponse = h.response({
-        status: 'error',
-        message: 'Internal server error',
-      });
-      newResponse.code(500);
-      return newResponse;
-    }
-    return h.continue;
-  });
+      return h.continue;
+    });
 
-  // Start the server
-  await server.start();
-  console.log(`Server running at ${server.info.uri}`);
+    // Start the server
+    await server.start();
+    console.log(`Server running at ${server.info.uri}`);
+  } catch (error) {
+    console.error('Failed to start the server:', error);
+    process.exit(1);
+  }
 };
 
 init();
