@@ -40,6 +40,7 @@ const CollaborationsValidator = require('./validator/collaborations');
 const CollaborationService = require('./services/postgres/CollaborationService');
 
 const init = async () => {
+  // Initializing services
   const albumsService = new AlbumService();
   const songsService = new SongService();
   const usersService = new UserService();
@@ -48,22 +49,21 @@ const init = async () => {
   const playlistsService = new PlaylistService(collaborationsService);
   const activitiesService = new PlaylistSongActivitiesService();
 
+  // Creating the Hapi server
   const server = Hapi.server({
     port: process.env.PORT || 5000, // Default port to 5000 if not set
     host: process.env.HOST || 'localhost', // Default host to 'localhost' if not set
     routes: {
       cors: {
-        origin: ['*'],
+        origin: ['*'], // Allowing all origins for CORS
       },
     },
   });
 
-  await server.register([
-    {
-      plugin: Jwt,
-    },
-  ]);
+  // Registering JWT plugin
+  await server.register(Jwt);
 
+  // Configuring JWT authentication strategy
   server.auth.strategy('openmusic_jwt', 'jwt', {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
@@ -80,6 +80,7 @@ const init = async () => {
     }),
   });
 
+  // Registering plugins
   await server.register([
     {
       plugin: albums,
@@ -138,6 +139,7 @@ const init = async () => {
     },
   ]);
 
+  // Global error handling
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
     if (response instanceof Error) {
@@ -162,6 +164,7 @@ const init = async () => {
     return h.continue;
   });
 
+  // Start the server
   await server.start();
   console.log(`Server running at ${server.info.uri}`);
 };
