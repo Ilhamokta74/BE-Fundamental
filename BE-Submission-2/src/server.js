@@ -4,45 +4,49 @@ const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
 const ClientError = require('./ErrorHandling/ClientError');
 
-// Services
+// Album
+const albums = require('./api/albums');
+const AlbumsValidator = require('./validator/albums');
 const AlbumService = require('./services/postgres/AlbumService');
+
+// Song
+const songs = require('./api/songs');
+const SongsValidator = require('./validator/songs');
 const SongService = require('./services/postgres/SongService');
+
+// User
+const users = require('./api/users');
+const UsersValidator = require('./validator/users');
 const UserService = require('./services/postgres/UserService');
+
+// Authentication
+const authentications = require('./api/authentications');
+const AuthenticationsValidator = require('./validator/authentications');
+const TokenManager = require('./tokenManager/tokenManager');
 const AuthenticationService = require('./services/postgres/AuthenticationService');
+
+// Playlist
+const playlists = require('./api/playlists');
+const PlaylistsValidator = require('./validator/playlist');
 const PlaylistService = require('./services/postgres/PlaylistServices');
+
+// Activity
+const activities = require('./api/activities');
 const PlaylistSongActivitiesService = require('./services/postgres/PlaylistSongActivitiesService');
+
+// Collaborations
+const collaborations = require('./api/collaborations');
+const CollaborationsValidator = require('./validator/collaborations');
 const CollaborationService = require('./services/postgres/CollaborationService');
 
-// Validators
-const AlbumsValidator = require('./validator/albums');
-const SongsValidator = require('./validator/songs');
-const UsersValidator = require('./validator/users');
-const AuthenticationsValidator = require('./validator/authentications');
-const PlaylistsValidator = require('./validator/playlist');
-const CollaborationsValidator = require('./validator/collaborations');
-
-// APIs
-const albums = require('./api/albums');
-const songs = require('./api/songs');
-const users = require('./api/users');
-const authentications = require('./api/authentications');
-const playlists = require('./api/playlists');
-const activities = require('./api/activities');
-const collaborations = require('./api/collaborations');
-
-// Token Manager
-const TokenManager = require('./tokenManager/tokenManager');
-
 const init = async () => {
-  const services = {
-    albumsService: new AlbumService(),
-    songsService: new SongService(),
-    usersService: new UserService(),
-    authenticationsService: new AuthenticationService(),
-    collaborationsService: new CollaborationService(),
-    playlistsService: new PlaylistService(this.collaborationsService),
-    activitiesService: new PlaylistSongActivitiesService(),
-  };
+  const albumsService = new AlbumService();
+  const songsService = new SongService();
+  const usersService = new UserService();
+  const authenticationsService = new AuthenticationService();
+  const collaborationsService = new CollaborationService();
+  const playlistsService = new PlaylistService(collaborationsService);
+  const activitiesService = new PlaylistSongActivitiesService();
 
   const server = Hapi.server({
     port: process.env.PORT || 5000, // Default port to 5000 if not set
@@ -54,7 +58,11 @@ const init = async () => {
     },
   });
 
-  await server.register([{ plugin: Jwt }]);
+  await server.register([
+    {
+      plugin: Jwt,
+    },
+  ]);
 
   server.auth.strategy('openmusic_jwt', 'jwt', {
     keys: process.env.ACCESS_TOKEN_KEY,
@@ -66,19 +74,39 @@ const init = async () => {
     },
     validate: (artifacts) => ({
       isValid: true,
-      credentials: { id: artifacts.decoded.payload.id },
+      credentials: {
+        id: artifacts.decoded.payload.id,
+      },
     }),
   });
 
-  const plugins = [
-    { plugin: albums, options: { service: services.albumsService, validator: AlbumsValidator } },
-    { plugin: songs, options: { service: services.songsService, validator: SongsValidator } },
-    { plugin: users, options: { service: services.usersService, validator: UsersValidator } },
+  await server.register([
+    {
+      plugin: albums,
+      options: {
+        service: albumsService,
+        validator: AlbumsValidator,
+      },
+    },
+    {
+      plugin: songs,
+      options: {
+        service: songsService,
+        validator: SongsValidator,
+      },
+    },
+    {
+      plugin: users,
+      options: {
+        service: usersService,
+        validator: UsersValidator,
+      },
+    },
     {
       plugin: authentications,
       options: {
-        authenticationsService: services.authenticationsService,
-        usersService: services.usersService,
+        authenticationsService,
+        usersService,
         tokenManager: TokenManager,
         validator: AuthenticationsValidator,
       },
@@ -86,48 +114,50 @@ const init = async () => {
     {
       plugin: playlists,
       options: {
-        playlistsService: services.playlistsService,
-        songsService: services.songsService,
-        activitiesService: services.activitiesService,
+        playlistsService,
+        songsService,
+        activitiesService,
         validator: PlaylistsValidator,
       },
     },
     {
       plugin: activities,
       options: {
-        playlistsService: services.playlistsService,
-        activitiesService: services.activitiesService,
+        playlistsService,
+        activitiesService,
       },
     },
     {
       plugin: collaborations,
       options: {
-        collaborationsService: services.collaborationsService,
-        playlistsService: services.playlistsService,
-        usersService: services.usersService,
+        collaborationsService,
+        playlistsService,
+        usersService,
         validator: CollaborationsValidator,
       },
     },
-  ];
-
-  await server.register(plugins);
+  ]);
 
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
     if (response instanceof Error) {
       if (response instanceof ClientError) {
-        return h.response({
+        const newResponse = h.response({
           status: 'fail',
           message: response.message,
-        }).code(response.statusCode);
+        });
+        newResponse.code(response.statusCode);
+        return newResponse;
       }
-
-      if (!response.isServer) return h.continue;
-
-      return h.response({
+      if (!response.isServer) {
+        return h.continue;
+      }
+      const newResponse = h.response({
         status: 'error',
         message: 'Internal server error',
-      }).code(500);
+      });
+      newResponse.code(500);
+      return newResponse;
     }
     return h.continue;
   });
