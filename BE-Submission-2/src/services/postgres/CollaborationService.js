@@ -9,18 +9,20 @@ class CollaborationService {
 
   async addCollaboration(playlistId, userId) {
     const id = `collab-${nanoid(16)}`;
-
     const query = {
-      text: 'INSERT INTO collaborations VALUES ($1, $2, $3) RETURNING id',
+      text: 'INSERT INTO collaborations(id, playlist_id, user_id) VALUES($1, $2, $3) RETURNING id',
       values: [id, playlistId, userId],
     };
 
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new InvariantError('Kolaborasi gagal ditambahkan');
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rows[0].id) {
+        throw new InvariantError('Failed to add collaboration.');
+      }
+      return result.rows[0].id;
+    } catch (error) {
+      throw new InvariantError(`Failed to add collaboration: ${error.message}`);
     }
-    return result.rows[0].id;
   }
 
   async deleteCollaboration(playlistId, userId) {
@@ -29,23 +31,29 @@ class CollaborationService {
       values: [playlistId, userId],
     };
 
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new InvariantError('Kolaborasi gagal dihapus');
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new InvariantError('Failed to delete collaboration.');
+      }
+    } catch (error) {
+      throw new InvariantError(`Failed to delete collaboration: ${error.message}`);
     }
   }
 
   async verifyCollaborator(playlistId, userId) {
     const query = {
-      text: 'SELECT * FROM collaborations WHERE playlist_id = $1 AND user_id = $2',
+      text: 'SELECT id FROM collaborations WHERE playlist_id = $1 AND user_id = $2',
       values: [playlistId, userId],
     };
 
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new InvariantError('Kolaborasi gagal diverifikasi');
+    try {
+      const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new InvariantError('Collaboration verification failed.');
+      }
+    } catch (error) {
+      throw new InvariantError(`Collaboration verification failed: ${error.message}`);
     }
   }
 }
