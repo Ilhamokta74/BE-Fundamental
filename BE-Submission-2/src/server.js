@@ -17,7 +17,7 @@ const init = async () => {
   const songsService = new SongsService();
 
   const server = Hapi.server({
-    port: process.env.PORT || 9000, // Default port to 5000 if not set
+    port: process.env.PORT || 5000, // Default port to 5000 if not set
     host: process.env.HOST || 'localhost', // Default host to 'localhost' if not set
     routes: {
       cors: {
