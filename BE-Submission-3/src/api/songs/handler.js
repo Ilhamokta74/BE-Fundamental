@@ -18,7 +18,7 @@ class SongsHandler {
     });
     const response = h.response({
       status: 'success',
-      message: 'Song successfully added',
+      message: 'Song berhasil ditambah',
       data: {
         songId,
       },
@@ -59,7 +59,7 @@ class SongsHandler {
     await this._service.editSongById(id, request.payload);
     const response = h.response({
       status: 'success',
-      message: 'Song successfully updated',
+      message: 'Song berhasil diperbaharui',
     });
     response.code(200);
     return response;
@@ -70,7 +70,7 @@ class SongsHandler {
     await this._service.deleteSongById(id);
     const response = h.response({
       status: 'success',
-      message: 'Song successfully deleted',
+      message: 'Song berhasil dihapus',
     });
     response.code(200);
     return response;
