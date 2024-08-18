@@ -1,7 +1,6 @@
 /**
  * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
  */
-exports.shorthands = undefined;
 
 /**
  * @param pgm {import('node-pg-migrate').MigrationBuilder}
@@ -10,9 +9,8 @@ exports.shorthands = undefined;
  */
 exports.up = (pgm) => {
   pgm.addColumn('albums', {
-    cover_url: {
-      type: 'text',
-      default: null,
+    cover: {
+      type: 'TEXT',
     },
   });
 };
@@ -23,5 +21,5 @@ exports.up = (pgm) => {
  * @returns {Promise<void> | void}
  */
 exports.down = (pgm) => {
-  pgm.dropColumn('albums', 'cover_url');
+  pgm.dropColumn('albums', 'cover');
 };
