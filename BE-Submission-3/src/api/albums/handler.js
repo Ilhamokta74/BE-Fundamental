@@ -4,17 +4,15 @@ class AlbumsHandler {
   constructor(service, validator) {
     this._service = service;
     this._validator = validator;
-
-    autoBind(this); // Automatically binds all methods to the instance
+    autoBind(this);
   }
 
   async postAlbumHandler(request, h) {
     this._validator.validateAlbumPayload(request.payload);
-    const { name, year } = request.payload;
-    const albumId = await this._service.addAlbum({ name, year });
+    const albumId = await this._service.addAlbum(request.payload);
     const response = h.response({
       status: 'success',
-      message: 'Album successfully added',
+      message: 'Album berhasil ditambahkan',
       data: {
         albumId,
       },
@@ -42,7 +40,7 @@ class AlbumsHandler {
     await this._service.editAlbumById(id, request.payload);
     const response = h.response({
       status: 'success',
-      message: 'Album successfully updated',
+      message: 'Album berhasil diperbarui',
     });
     response.code(200);
     return response;
@@ -53,7 +51,7 @@ class AlbumsHandler {
     await this._service.deleteAlbumById(id);
     const response = h.response({
       status: 'success',
-      message: 'Album successfully deleted',
+      message: 'Album berhasil dihapus',
     });
     response.code(200);
     return response;
