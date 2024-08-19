@@ -1,3 +1,14 @@
+const mapDBToAlbumModel = ({
+  id, name, year, created_at, updated_at, cover_url,
+}) => ({
+  id,
+  name,
+  year,
+  createdAt: created_at,
+  updatedAt: updated_at,
+  coverUrl: cover_url,
+});
+
 const mapDBToSongModel = ({
   id,
   title,
@@ -20,4 +31,4 @@ const mapDBToSongModel = ({
   updatedAt: updated_at,
 });
 
-module.exports = { mapDBToSongModel };
+module.exports = { mapDBToAlbumModel, mapDBToSongModel };
