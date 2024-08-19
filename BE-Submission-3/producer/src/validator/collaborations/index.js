@@ -1,7 +1,7 @@
-const InvariantError = require('../../ErrorHandling/InvariantError');
 const { CollaborationPayloadSchema } = require('./schema');
+const InvariantError = require('../../errorHandling/InvariantError');
 
-const CollaborationsValidator = {
+const CollaborationValidator = {
   validateCollaborationPayload: (payload) => {
     const validationResult = CollaborationPayloadSchema.validate(payload);
     if (validationResult.error) {
@@ -10,4 +10,4 @@ const CollaborationsValidator = {
   },
 };
 
-module.exports = CollaborationsValidator;
+module.exports = CollaborationValidator;

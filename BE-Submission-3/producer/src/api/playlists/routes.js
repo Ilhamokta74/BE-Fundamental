@@ -2,49 +2,25 @@ const routes = (handler) => [
   {
     method: 'POST',
     path: '/playlists',
-    handler: handler.postPlaylistHandler,
+    handler: (request, h) => handler.postPlaylistHandler(request, h),
     options: {
-      auth: 'openmusic_jwt',
+      auth: 'open_music_jwt',
     },
   },
   {
     method: 'GET',
     path: '/playlists',
-    handler: handler.getPlaylistsHandler,
+    handler: (request, h) => handler.getPlaylistsHandler(request, h),
     options: {
-      auth: 'openmusic_jwt',
+      auth: 'open_music_jwt',
     },
   },
   {
     method: 'DELETE',
     path: '/playlists/{id}',
-    handler: handler.deletePlaylistByIdHandler,
+    handler: (request, h) => handler.deletePlaylistHandler(request, h),
     options: {
-      auth: 'openmusic_jwt',
-    },
-  },
-  {
-    method: 'POST',
-    path: '/playlists/{id}/songs',
-    handler: handler.postPlaylistSongHandler,
-    options: {
-      auth: 'openmusic_jwt',
-    },
-  },
-  {
-    method: 'GET',
-    path: '/playlists/{id}/songs',
-    handler: handler.getPlaylistSongByIdHandler,
-    options: {
-      auth: 'openmusic_jwt',
-    },
-  },
-  {
-    method: 'DELETE',
-    path: '/playlists/{id}/songs',
-    handler: handler.deletePlaylistSongHandler,
-    options: {
-      auth: 'openmusic_jwt',
+      auth: 'open_music_jwt',
     },
   },
 ];

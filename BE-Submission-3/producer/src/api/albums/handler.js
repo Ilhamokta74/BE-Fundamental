@@ -1,20 +1,22 @@
-const autoBind = require('auto-bind');
+const config = require('../../utils/config');
 
 class AlbumsHandler {
-  constructor(service, validator) {
+  constructor(service, validator, service2, storageService) {
     this._service = service;
     this._validator = validator;
-
-    autoBind(this); // Automatically binds all methods to the instance
+    this._service2 = service2;
+    this._storageService = storageService;
   }
 
   async postAlbumHandler(request, h) {
     this._validator.validateAlbumPayload(request.payload);
     const { name, year } = request.payload;
+
     const albumId = await this._service.addAlbum({ name, year });
+
     const response = h.response({
       status: 'success',
-      message: 'Album successfully added',
+      message: 'Album berhasil ditambahkan',
       data: {
         albumId,
       },
@@ -23,39 +25,59 @@ class AlbumsHandler {
     return response;
   }
 
-  async getAlbumByIdHandler(request, h) {
+  async getAlbumByIdHandler(request) {
     const { id } = request.params;
     const album = await this._service.getAlbumById(id);
-    const response = h.response({
+    const songs = await this._service2.getSongByAlbumId(id);
+
+    return {
       status: 'success',
       data: {
-        album,
+        album: {
+          ...album,
+          songs,
+        },
       },
-    });
-    response.code(200);
-    return response;
+    };
   }
 
-  async putAlbumByIdHandler(request, h) {
+  async putAlbumByIdHandler(request) {
     this._validator.validateAlbumPayload(request.payload);
     const { id } = request.params;
+
     await this._service.editAlbumById(id, request.payload);
-    const response = h.response({
+
+    return {
       status: 'success',
-      message: 'Album successfully updated',
-    });
-    response.code(200);
-    return response;
+      message: 'Album berhasil diperbarui',
+    };
   }
 
-  async deleteAlbumByIdHandler(request, h) {
+  async deleteAlbumByIdHandler(request) {
     const { id } = request.params;
     await this._service.deleteAlbumById(id);
+
+    return {
+      status: 'success',
+      message: 'Album berhasil dihapus',
+    };
+  }
+
+  async postAlbumCoverHandler(request, h) {
+    const { cover } = request.payload;
+    const albumId = request.params.id;
+
+    this._validator.validateImageHeaders(cover.hapi.headers);
+
+    const filename = await this._storageService.writeFile(cover, cover.hapi);
+
+    await this._service.updateAlbumCoverUrl({ id: albumId, url: `http://${config.app.host}:${config.app.port}/albums/covers/${filename}` });
+
     const response = h.response({
       status: 'success',
-      message: 'Album successfully deleted',
+      message: 'Sampul berhasil diunggah',
     });
-    response.code(200);
+    response.code(201);
     return response;
   }
 }

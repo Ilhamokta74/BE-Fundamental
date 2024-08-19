@@ -5,13 +5,13 @@ module.exports = {
   name: 'collaborations',
   version: '1.0.0',
   register: async (server, {
-    collaborationsService, playlistsService, usersService, validator,
+    service, validator, playlistsService, usersService,
   }) => {
     const collaborationsHandler = new CollaborationsHandler(
-      collaborationsService,
+      service,
+      validator,
       playlistsService,
       usersService,
-      validator,
     );
     server.route(routes(collaborationsHandler));
   },
