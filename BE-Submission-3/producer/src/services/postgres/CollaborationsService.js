@@ -2,7 +2,6 @@ const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../errorHandling/InvariantError');
 const NotFoundError = require('../../errorHandling/NotFoundError');
-// const AuthorizationError = require('../../errorHandling/AuthorizationError');
 
 class CollaborationsService {
   constructor() {
